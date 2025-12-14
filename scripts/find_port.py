@@ -1,0 +1,3 @@
+from leisaac.xtrainer_utils.utils.manipulate_utils import init_port_in_settings_file
+
+init_port_in_settings_file()
