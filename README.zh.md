@@ -247,6 +247,10 @@ python scripts/evaluation/policy_inference.py \
 
 <img src="./assets/docs/display2.png" width="640" alt="多视角相机画面" />
 
+**VR 演示：**
+
+<img src="./assets/docs/VR.gif" width="640" alt="VR 遥操作演示" />
+
 ### 即将支持
 
 | 头显 | 状态 |

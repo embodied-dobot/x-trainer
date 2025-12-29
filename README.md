@@ -254,6 +254,10 @@ python scripts/evaluation/policy_inference.py \
 
 <img src="./assets/docs/display2.png" width="640" alt="Camera Views" />
 
+**VR:**
+
+<img src="./assets/docs/VR.gif" width="640" alt="ACT data capture" />
+
 ### Upcoming Support
 
 | Headset | Status |
