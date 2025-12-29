@@ -73,9 +73,45 @@ def init_action_cfg(action_cfg, device):
             joint_names=["J2_7", "J2_8"],
             scale=1.0,
         )
+    elif device in ['xtrainer_vr']:
+        # Left Arm + Gripper
+        # IK, input: [x, y, z, qw, qx, qy, qz]
+        action_cfg.left_arm_action = mdp.DifferentialInverseKinematicsActionCfg(
+            asset_name="robot",
+            joint_names=["J1_1", "J1_2", "J1_3", "J1_4", "J1_5", "J1_6"],
+            body_name="J1_6", 
+            controller=mdp.DifferentialIKControllerCfg(
+                command_type="pose", 
+                ik_method="dls", 
+                use_relative_mode=False
+            ),
+            scale=1.0,
+        )
+        action_cfg.left_gripper_action = mdp.JointPositionActionCfg(
+            asset_name="robot",
+            joint_names=["J1_7", "J1_8"],
+            scale=1.0,
+        )
+        # Right Arm + Gripper
+        action_cfg.right_arm_action = mdp.DifferentialInverseKinematicsActionCfg(
+            asset_name="robot",
+            joint_names=["J2_1", "J2_2", "J2_3", "J2_4", "J2_5", "J2_6"],
+            body_name="J2_6",
+            controller=mdp.DifferentialIKControllerCfg(
+                command_type="pose", 
+                ik_method="dls", 
+                use_relative_mode=False
+            ),
+            scale=1.0,
+        )
+        action_cfg.right_gripper_action = mdp.JointPositionActionCfg(
+            asset_name="robot",
+            joint_names=["J2_7", "J2_8"],
+            scale=1.0,
+        )
     elif device in ['bi_keyboard']:
         # Left Arm + Gripper
-        action_cfg.left_arm_action = mdp.RelativeJointPositionActionCfg(
+        action_cfg.left_arm_action = mdp.JointPositionActionCfg(
             asset_name="robot",
             joint_names=["J1_1", "J1_2", "J1_3", "J1_4", "J1_5", "J1_6"],
             scale=1.0,
@@ -86,7 +122,7 @@ def init_action_cfg(action_cfg, device):
             scale=0.7,
         )
         # Right Arm + Gripper
-        action_cfg.right_arm_action = mdp.RelativeJointPositionActionCfg(
+        action_cfg.right_arm_action = mdp.JointPositionActionCfg(
             asset_name="robot",
             joint_names=["J2_1", "J2_2", "J2_3", "J2_4", "J2_5", "J2_6"],
             scale=1.0,
@@ -173,6 +209,28 @@ def convert_action_from_xtrainer_leader(joint_state: dict[str, float], motor_lim
     
     return processed_action
 
+def convert_action_from_xtrainer_vr(joint_state: dict[str, float], teleop_device) -> torch.Tensor:
+    processed_action = torch.zeros(teleop_device.env.num_envs, 18, device=teleop_device.env.device)
+
+    joint_limits = XTRAINER_FOLLOWER_USD_JOINT_LIMITS
+    if joint_state.get('left') is not None:
+        vr_data = torch.tensor(joint_state['left'], device=teleop_device.env.device)
+        processed_action[:, 0:7] = vr_data[0:7]
+        
+        # gripper: (0.0 = Open, 1.0 = Closed)-->(0.0 = Open, 0.04 = Closed)
+        processed_action[:, 8] = vr_data[7] * (joint_limits["J1_8"][1] - joint_limits["J1_8"][0]) + joint_limits["J1_8"][0]
+        processed_action[:, 7] = -processed_action[:, 8]
+
+    if joint_state.get('right') is not None:
+        vr_data = torch.tensor(joint_state['right'], device=teleop_device.env.device)
+        processed_action[:, 9:16] = vr_data[0:7]
+        
+        # gripper: (0.0 = Open, 1.0 = Closed)-->(0.0 = Open, 0.04 = Closed)
+        processed_action[:, 17] = vr_data[7] * (joint_limits["J2_8"][1] - joint_limits["J2_8"][0]) + joint_limits["J2_8"][0]
+        processed_action[:, 16] = -processed_action[:, 17]
+        
+    return processed_action
+
 def preprocess_device_action(action: dict[str, Any], teleop_device) -> torch.Tensor:
     if action.get('so101_leader') is not None:
         processed_action = convert_action_from_so101_leader(action['joint_state'], action['motor_limits'], teleop_device)
@@ -193,6 +251,11 @@ def preprocess_device_action(action: dict[str, Any], teleop_device) -> torch.Ten
     elif action.get('bi_keyboard') is not None:
         processed_action = torch.zeros(teleop_device.env.num_envs, 16, device=teleop_device.env.device)
         processed_action[:, :] = action['joint_state']
+    elif action.get('xtrainer_vr') is not None:
+        processed_action = convert_action_from_xtrainer_vr(
+                                                           action['joint_state'], 
+                                                           teleop_device
+                                                         )
     else:
-        raise NotImplementedError("Only teleoperation with so101_leader, bi_so101_leader, keyboard is supported for now.")
+        raise NotImplementedError("Only teleoperation with so101_leader, bi_so101_leader, keyboard, xtrainer_leader, bi_keyboard, xtrainer_vr is supported for now.")
     return processed_action

@@ -1,0 +1,22 @@
+network:
+  https_port: 8443
+  websocket_port: 8442
+  host_ip: 0.0.0.0
+ssl:
+  certfile: cert.pem
+  keyfile: key.pem
+robot:
+  left_arm:
+    name: Left Arm
+    port: /dev/ttySO100red
+    enabled: true
+  right_arm:
+    name: Right Arm
+    port: /dev/ttySO100blue
+    enabled: true
+  vr_to_robot_scale: 1
+  send_interval: 0.05
+control:
+  keyboard:
+    pos_step: 0.01
+    angle_step: 5

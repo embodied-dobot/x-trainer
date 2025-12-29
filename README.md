@@ -5,12 +5,15 @@
 ![Isaac Sim 4.5](https://img.shields.io/badge/Isaac%20Sim-4.5-0a84ff?style=for-the-badge&logo=nvidia)
 ![Isaac Lab 0.47.1](https://img.shields.io/badge/Isaac%20Lab-0.47.1-34c759?style=for-the-badge&logo=nvidia)
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-ff9500?style=for-the-badge&logo=python)
+[![Changelog](https://img.shields.io/badge/Changelog-2025--12--29-5856d6?style=for-the-badge)](CHANGELOG.md)
 
 This project is based on the **Isaac Lab (LeIsaac)** framework. It implements a complete pipeline for **X-Trainer Dual-Arm Robot** simulation, keyboard teleoperation, and data collection using a real robot leader.
 
 The system features a dual-arm coordination task (Lift Cube), multi-camera visual perception (RGB), and high-precision 30Hz data recording suitable for VLA (Vision-Language-Action) model training.
 
 Data collected via this pipeline is fully compatible with the **LeRobot** framework for training. Post-training evaluation can be performed directly within this environment using asynchronous inference.
+
+For a deeper technical overview (architecture, modules, algorithms), see `docs/TECHNICAL_OVERVIEW.zh.md` (Chinese).
 
 ---
 
@@ -25,6 +28,8 @@ Data collected via this pipeline is fully compatible with the **LeRobot** framew
 * **Real Robot Teleoperation (`XTrainerLeader`)**:
     * Reads joint angles (14-dims) from the real X-Trainer leader arms via USB serial.
     * Real-time mapping to the simulation environment (16-dims) for "Digital Twin" control.
+* **VR Teleoperation (`XTrainerVR`)**:
+    * Lightweight WebXR UI (`XLeVR`) running inside Quest / PICO headsets. Press `B` to auto-calibrate, stream 6DoF pose + trigger values, and map them to the 16-DoF follower in simulation.
 * **High-Quality Data Collection**:
     * Strict **30Hz** frame synchronization using `Decimation=2` and `Step_Hz=30`.
     * HDF5 recording containing aligned images and joint states.
@@ -155,7 +160,47 @@ python scripts/environments/teleoperation/teleop_se3_agent.py \
     --multi_view
 ```
 
-### 3. Data Conversion
+### 3. VR Teleoperation (`XTrainerVR`)
+
+The WebXR service in `source/leisaac/leisaac/xtrainer_utils/XLeVR/` allows you to drive the dual-arm simulation directly from Quest 3 / PICO 4 headsets.
+
+1. **Install the dependencies (first-time only)**
+
+```bash
+pip install -r source/leisaac/leisaac/xtrainer_utils/XLeVR/requirements.txt
+```
+
+2. **Launch the teleoperation script**
+
+```bash
+python scripts/environments/teleoperation/teleop_se3_agent.py \
+    --task=LeIsaac-XTrainer-PickCube-v0 \
+    --teleop_device=xtrainer_vr \
+    --num_envs=1 \
+    --device=cuda \
+    --enable_cameras \
+    --multi_view
+```
+
+Add `--left_disabled` when you only want the right controller mapped.
+
+3. **Connect from the headset browser**
+
+    * Keep the headset and workstation on the same LAN.
+    * Once the script starts it prints the HTTPS endpoint, e.g. `https://192.168.1.23:8443`.
+    * On Quest Browser / PICO Browser accept the self-signed certificate the first time, then the `XLeVR` dashboard will show up.
+
+4. **Controller logic**
+
+    * `Right B`: start streaming control and capture the current pose as the zero reference.
+    * `Left X`: task failed → reset (fires the `R` callback).
+    * `Left Y`: task success → reset (fires the `N` callback).
+    * Trigger value controls the gripper opening (release = open).
+    * 6DoF pose of each controller is mapped directly to the follower wrists once the session starts.
+
+Customize ports or certificates by editing `config.yaml`, `cert.pem`, and `key.pem` in the same directory if needed.
+
+### 4. Data Conversion
 
 After data collection is complete, run the script to convert the data into the LeRobot format.
 
@@ -165,7 +210,7 @@ python scripts/convert/isaaclab2lerobot_xtrainer.py
 
 It is recommended to create a separate `lerobot` environment in Conda for training.
 
-### 4. Visual Evaluation
+### 5. Visual Evaluation
 
 Once the model is trained, visual evaluation can be performed within this project.
 
@@ -213,8 +258,8 @@ python scripts/evaluation/policy_inference.py \
 
 | Headset | Status |
 | :-- | :-- |
-| Quest 3 | 🔄 In progress |
-| PICO 4 | 🔄 In progress |
+| Quest 3 | ✅ Available |
+| PICO 4 | ✅ Available |
 | Vision Pro | 🔄 In progress |
 
 ---

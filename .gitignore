@@ -67,3 +67,5 @@ assets/robots/*
 
 checkpoints/*
 !checkpoints/.gitkeep
+
+Code Submission Guidelines.md

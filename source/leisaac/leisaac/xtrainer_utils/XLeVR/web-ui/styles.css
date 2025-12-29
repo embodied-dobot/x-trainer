@@ -1,0 +1,597 @@
+/* Base styles */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #333;
+  overflow-x: auto;
+  min-width: 320px;
+}
+
+/* Desktop-only interface */
+.desktop-interface {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 10000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+  overflow-y: auto;
+  min-width: 320px;
+  box-sizing: border-box;
+}
+
+.desktop-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  max-width: 800px;
+}
+
+.desktop-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.desktop-subtitle {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin-bottom: 20px;
+}
+
+/* Status indicators */
+.status-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
+}
+
+.status-section h2 {
+  color: white;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.status-grid {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-indicator {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ff4444;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.status-indicator.connected {
+  background-color: #44ff44;
+}
+
+.status-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Control toggles */
+.control-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #3498db;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.control-toggle:hover {
+  background: #3498db;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+}
+
+.control-toggle.active {
+  background: #27ae60;
+  border-color: #27ae60;
+  color: white;
+}
+
+/* Keyboard help section */
+.keyboard-help {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.keyboard-help.active {
+  background: rgba(76, 175, 80, 0.1);
+  border: 2px solid #4CAF50;
+  box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+}
+
+.keyboard-help.active .help-title {
+  color: #2E7D32;
+}
+
+.keyboard-help-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.keyboard-help-expanded {
+  display: none;
+}
+
+.keyboard-help.active .keyboard-help-expanded {
+  display: block;
+}
+
+.keyboard-help-collapsed {
+  display: block;
+}
+
+.keyboard-help-collapsed .control-toggle {
+  display: inline-flex;
+  width: auto;
+}
+
+.keyboard-help.active .keyboard-help-collapsed {
+  display: none;
+}
+
+.help-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.help-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.help-column h4 {
+  margin: 0 0 10px 0;
+  color: #34495e;
+  font-size: 16px;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 5px;
+}
+
+.key-group {
+  margin-bottom: 12px;
+}
+
+.key-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.key {
+  background: #ecf0f1;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.key-desc {
+  color: #7f8c8d;
+  font-size: 13px;
+}
+
+/* VR-only content */
+.vr-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 9999;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.vr-title {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+.vr-subtitle {
+  font-size: 16px;
+  color: #7f8c8d;
+  margin-bottom: 30px;
+}
+
+/* VR Instructions Section */
+.vr-instructions-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
+}
+
+.vr-instructions-section h2 {
+  color: white;
+  margin: 0 0 15px 0;
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.instructions-content {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.instructions-image {
+  flex: 1;
+  min-width: 200px;
+}
+
+.instructions-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.instruction-item {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.instruction-item strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.95em;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  body {
+    min-width: 280px;
+  }
+  
+  .desktop-interface {
+    padding: 15px 10px;
+    min-width: 280px;
+    overflow-x: auto;
+  }
+  
+  .desktop-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    min-width: 260px;
+  }
+  
+  .status-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    min-width: 260px;
+  }
+  
+  .help-columns {
+    grid-template-columns: 1fr;
+  }
+  
+  .instructions-content {
+    flex-direction: column;
+  }
+  
+  .instructions-image {
+    order: -1;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .button-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .save-button,
+  .restart-button {
+    width: 100%;
+  }
+}
+
+/* Hide desktop interface in VR */
+@media (display-mode: standalone) {
+  .desktop-interface {
+    display: none;
+  }
+}
+
+/* A-Frame scene styling */
+a-scene {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+}
+
+.robot-controls {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.engage-btn {
+  background: linear-gradient(45deg, #4CAF50, #45a049);
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+  min-width: 160px;
+}
+
+.engage-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.engage-btn.disconnect {
+  background: linear-gradient(45deg, #f44336, #d32f2f);
+}
+
+.engagement-status {
+  font-size: 14px;
+  color: white;
+  font-style: italic;
+}
+
+.control-section {
+  margin-top: 1rem;
+}
+
+/* Settings button */
+.settings-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10001;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.settings-button:hover {
+  background: #3498db;
+  color: white;
+  transform: rotate(45deg);
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+/* Settings modal */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 20000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+}
+
+.settings-modal.show {
+  display: flex;
+}
+
+.settings-content {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #ecf0f1;
+  padding-bottom: 15px;
+}
+
+.settings-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #7f8c8d;
+  padding: 5px;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.close-button:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.settings-section {
+  margin-bottom: 25px;
+}
+
+.settings-section h3 {
+  color: #34495e;
+  margin-bottom: 15px;
+  font-size: 18px;
+  border-left: 4px solid #3498db;
+  padding-left: 10px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #bdc3c7;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.save-button {
+  background: linear-gradient(45deg, #27ae60, #2ecc71);
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 48%;
+}
+
+.save-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+.save-button:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.restart-button {
+  background: linear-gradient(45deg, #f44336, #d32f2f);
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 48%;
+}
+
+.restart-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+} 

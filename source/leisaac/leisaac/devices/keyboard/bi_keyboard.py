@@ -55,6 +55,10 @@ class BiKeyboard(Device):
         # Command buffer: [LeftArm(6), LeftGrip(2), RightArm(6), RightGrip(2)] = 16 DoF
         self._delta_pos = np.zeros(16)
 
+        self._absolute_pos = np.zeros(16)
+        self._arm_indices = [0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13]
+        self._gripper_indices = [6, 7, 14, 15]
+
         # some flags and callbacks
         self.started = False
         self._reset_state = False
@@ -92,7 +96,13 @@ class BiKeyboard(Device):
         return msg
 
     def get_device_state(self):
-        return self._delta_pos
+        for i in self._arm_indices:
+            self._absolute_pos[i] += self._delta_pos[i]
+        
+        for i in self._gripper_indices:
+            self._absolute_pos[i] = self._delta_pos[i]
+        # print(self._absolute_pos)
+        return self._absolute_pos
 
     def input2action(self):
         state = {}
@@ -114,6 +124,7 @@ class BiKeyboard(Device):
 
     def reset(self):
         self._delta_pos = np.zeros(16)
+        self._absolute_pos = np.zeros(16)
         self._active_key_velocities.clear()
         self._shift_pressed = False
 
@@ -134,11 +145,13 @@ class BiKeyboard(Device):
             elif event.input.name == "R":
                 self.started = False
                 self._reset_state = True
+                self.reset()
                 if "R" in self._additional_callbacks:
                     self._additional_callbacks["R"]()
             elif event.input.name == "N":
                 self.started = False
                 self._reset_state = True
+                self.reset()
                 if "N" in self._additional_callbacks:
                     self._additional_callbacks["N"]()
             
