@@ -235,7 +235,7 @@ def main():  # noqa: C901
     elif args_cli.teleop_device == "xtrainerleader":
         teleop_interface = XTrainerLeader(env, args_cli.left_disabled)
     elif args_cli.teleop_device == "bi_keyboard":
-        teleop_interface = BiKeyboard(env, sensitivity=0.15 * args_cli.sensitivity)
+        teleop_interface = BiKeyboard(env, sensitivity=0.06 * args_cli.sensitivity)
     elif args_cli.teleop_device == "xtrainer_vr":
         teleop_interface = XTrainerVR(env, args_cli.left_disabled)
     else:

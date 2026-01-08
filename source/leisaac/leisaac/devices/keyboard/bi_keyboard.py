@@ -7,7 +7,7 @@ import carb
 import omni
 
 from ..device_base import Device
-
+from leisaac.assets.robots.xtrainer import XTRAINER_FOLLOWER_USD_JOINT_LIMITS
 
 class BiKeyboard(Device):
     """A keyboard controller for sending SE(3) commands as delta poses for lerobot.
@@ -15,21 +15,21 @@ class BiKeyboard(Device):
         ============================== ================= =================
         Description                    Key (+ve axis)    Key (-ve axis)
         ============================== ================= =================
-        J1_1                            Q                 SHIFT+Q
-        J1_2                            W                 SHIFT+W
-        J1_3                            E                 SHIFT+E
-        J1_4                            A                 SHIFT+A
-        J1_5                            S                 SHIFT+S
-        J1_6                            D                 SHIFT+D
-        J1_7+J1_8                       G                 SHIFT+G
+        J1_1                            Q                 Z+Q
+        J1_2                            W                 Z+W
+        J1_3                            E                 Z+E
+        J1_4                            A                 Z+A
+        J1_5                            S                 Z+S
+        J1_6                            D                 Z+D
+        J1_7+J1_8                       G                 Z+G
         
-        J2_1                            U                 SHIFT+U
-        J2_2                            I                 SHIFT+I
-        J2_3                            O                 SHIFT+O
-        J2_4                            J                 SHIFT+J
-        J2_5                            K                 SHIFT+K
-        J2_6                            L                 SHIFT+L
-        J2_7+J2_8                       H                 SHIFT+H
+        J2_1                            U                 Z+U
+        J2_2                            I                 Z+I
+        J2_3                            O                 Z+O
+        J2_4                            J                 Z+J
+        J2_5                            K                 Z+K
+        J2_6                            L                 Z+L
+        J2_7+J2_8                       H                 Z+H
         ============================== ================= =================
     """
 
@@ -56,16 +56,20 @@ class BiKeyboard(Device):
         self._delta_pos = np.zeros(16)
 
         self._absolute_pos = np.zeros(16)
-        self._arm_indices = [0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13]
-        self._gripper_indices = [6, 7, 14, 15]
+        self._xtrainer_joint_names_list = [
+                "J1_1", "J1_2", "J1_3", "J1_4", "J1_5", "J1_6",
+                "J1_7", "J1_8",
+                "J2_1", "J2_2", "J2_3", "J2_4", "J2_5", "J2_6",
+                "J2_7", "J2_8",
+        ]
 
         # some flags and callbacks
         self.started = False
         self._reset_state = False
         self._additional_callbacks = {}
         
-        # State tracking for SHIFT logic
-        self._shift_pressed = False
+        # State tracking for Z logic
+        self._z_pressed = False
         self._active_key_velocities = {}
 
     def __del__(self):
@@ -77,7 +81,7 @@ class BiKeyboard(Device):
         """Returns: A string containing the information of joystick."""
         msg = "BiKeyboard Controller for Dual-Arm X-Trainer (16 DoF).\n"
         msg += f"\tKeyboard name: {self._input.get_keyboard_name(self._keyboard)}\n"
-        msg += "\tHint: Hold [SHIFT] key + Letter key to move in negative direction.\n"
+        msg += "\tHint: Hold [Z] key + Letter key to move in negative direction.\n"
         msg += "\t----------------------------------------------------------\n"
         msg += "\tJoint Index                  Left Arm Key     Right Arm Key\n"
         msg += "\t----------------------------------------------------------\n"
@@ -96,11 +100,13 @@ class BiKeyboard(Device):
         return msg
 
     def get_device_state(self):
-        for i in self._arm_indices:
+        for i in range(len(self._absolute_pos)):
             self._absolute_pos[i] += self._delta_pos[i]
-        
-        for i in self._gripper_indices:
-            self._absolute_pos[i] = self._delta_pos[i]
+            self._absolute_pos[i] = np.clip(
+                                        self._absolute_pos[i], 
+                                        XTRAINER_FOLLOWER_USD_JOINT_LIMITS[self._xtrainer_joint_names_list[i]][0], 
+                                        XTRAINER_FOLLOWER_USD_JOINT_LIMITS[self._xtrainer_joint_names_list[i]][1]
+                                    )
         # print(self._absolute_pos)
         return self._absolute_pos
 
@@ -126,7 +132,7 @@ class BiKeyboard(Device):
         self._delta_pos = np.zeros(16)
         self._absolute_pos = np.zeros(16)
         self._active_key_velocities.clear()
-        self._shift_pressed = False
+        self._z_pressed = False
 
     def add_callback(self, key: str, func: Callable):
         self._additional_callbacks[key] = func
@@ -134,9 +140,9 @@ class BiKeyboard(Device):
     def _on_keyboard_event(self, event, *args, **kwargs):
         # apply the command when pressed
         if event.type == carb.input.KeyboardEventType.KEY_PRESS:
-            # tracking SHIFT state
-            if event.input.name in ["LEFT_SHIFT", "RIGHT_SHIFT"]:
-                self._shift_pressed = True
+            # tracking Z state
+            if event.input.name in ["Z"]:
+                self._z_pressed = True
             
             # function keys (B, R, N)
             if event.input.name == "B":
@@ -159,20 +165,21 @@ class BiKeyboard(Device):
             if event.input.name in self._target_indices_map:
                 target_indices = self._target_indices_map[event.input.name]
                 if event.input.name not in self._active_key_velocities:
-                    direction = -1.0 if self._shift_pressed else 1.0
-                    val = direction * self.sensitivity
-
-                    if len(target_indices) == 2: # gripper
-                        self._delta_pos[target_indices[0]] = -abs(val)
-                        self._delta_pos[target_indices[1]] = abs(val)
-                    else:
-                        self._delta_pos[target_indices[0]] += val
+                    direction = -1.0 if self._z_pressed else 1.0
                     
-                    self._active_key_velocities[event.input.name] = val
+                    if len(target_indices) == 2: # gripper
+                        val = 0.005*direction
+                        self._delta_pos[target_indices[0]] += -val
+                        self._delta_pos[target_indices[1]] += val
+                        self._active_key_velocities[event.input.name] = val
+                    else:
+                        val = direction * self.sensitivity
+                        self._delta_pos[target_indices[0]] += val
+                        self._active_key_velocities[event.input.name] = val
                 # print(self._active_key_velocities)
         elif event.type == carb.input.KeyboardEventType.KEY_RELEASE:
-            if event.input.name in ["LEFT_SHIFT", "RIGHT_SHIFT"]:
-                self._shift_pressed = False
+            if event.input.name in ["Z"]:
+                self._z_pressed = False
             
             if event.input.name in self._target_indices_map:
                 target_indices = self._target_indices_map[event.input.name]
@@ -181,11 +188,11 @@ class BiKeyboard(Device):
                     stored_val = self._active_key_velocities.pop(event.input.name)
 
                     if len(target_indices) == 2:
-                        self._delta_pos[target_indices[0]] = abs(stored_val)
-                        self._delta_pos[target_indices[1]] = -abs(stored_val)
+                        self._delta_pos[target_indices[0]] -= -stored_val
+                        self._delta_pos[target_indices[1]] -= stored_val
                     else:
                         self._delta_pos[target_indices[0]] -= stored_val
-                    
+        # print(self._delta_pos)
         return True
 
     def _create_key_bindings(self):

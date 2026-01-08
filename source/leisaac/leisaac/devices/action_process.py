@@ -116,7 +116,7 @@ def init_action_cfg(action_cfg, device):
             joint_names=["J1_1", "J1_2", "J1_3", "J1_4", "J1_5", "J1_6"],
             scale=1.0,
         )
-        action_cfg.left_gripper_action = mdp.RelativeJointPositionActionCfg(
+        action_cfg.left_gripper_action = mdp.JointPositionActionCfg(
             asset_name="robot",
             joint_names=["J1_7", "J1_8"],
             scale=0.7,
@@ -127,7 +127,7 @@ def init_action_cfg(action_cfg, device):
             joint_names=["J2_1", "J2_2", "J2_3", "J2_4", "J2_5", "J2_6"],
             scale=1.0,
         )
-        action_cfg.right_gripper_action = mdp.RelativeJointPositionActionCfg(
+        action_cfg.right_gripper_action = mdp.JointPositionActionCfg(
             asset_name="robot",
             joint_names=["J2_7", "J2_8"],
             scale=0.7,
