@@ -1,0 +1,26 @@
+# 数据集配置（核心：指定hdf5类型和文件路径）
+dataset:
+  type: "hdf5"
+  root: "/home/dobot/dobot/x-trainer/task_1_sorting/dataset_merged.hdf5"
+  use_imagenet_stats: true
+  video_backend: "torchcodec"
+
+# 策略配置（ACT模型）
+policy:
+  type: "act"
+  device: "cuda"
+  push_to_hub: false
+  empty_cameras: true  # 跳过图片编码器（无图片数据时必需）
+  dropout: 0.2         # 小数据集防过拟合
+  optimizer_lr: 5e-6   # 降低学习率
+
+# 训练配置
+output_dir: "/home/dobot/dobot/x-trainer/ckpts/act_sorting_new"
+job_name: "act_sorting_task1"
+batch_size: 4
+steps: 20000
+log_freq: 500
+save_freq: 10000
+eval_freq: 20000
+seed: 1000
+num_workers: 2  # 减少线程数，避免加载数据报错
