@@ -117,6 +117,10 @@
    - 参考 [LeIsaac 官方文档](https://lightwheelai.github.io/leisaac/docs/getting_started/installation) 完成安装
    - 已验证 **Isaac Sim 4.5** 可正常工作
    - 确保 Isaac Lab 环境已正确配置
+  
+2. **分支切换与USD资产下载**：
+   - 请注意如果是在github上clone代码，clone后需要切换分支到dobot-challenge。
+   - 受限于上传文件大小限制，github的代码中不包含赛题USD资产，完整USD资产见[huggingface](https://huggingface.co/datasets/Dobot-robot/X-trainer)。
 
 ### 使用 Anaconda 安装（推荐）
 
@@ -145,7 +149,7 @@ cd docker
 docker build --network=host -t xtrainer-leisaac:v1 .
 ```
 
-2. **修改路径映射**：编辑 `start_docker.sh`，设置正确的代码路径映射，例如：
+2. **修改路径映射**：编辑 `create_docker.sh`，设置正确的代码路径映射，例如：
 ```bash
 -v /home/xtrainer_leisaac:/workspace/xtrainer_leisaac:rw
 ```
