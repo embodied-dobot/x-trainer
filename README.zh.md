@@ -50,12 +50,12 @@ pip install -e source/leisaac
 1. 构建镜像：
 
 ```bash
-git clone https://github.com/dstx123/xtrainer_leisaac.git
+git clone https://github.com/embodied-dobot/x-trainer.git
 cd docker
 docker build --network=host -t xtrainer-leisaac:v1 .
 ```
 
-2. 修改 `start_docker.sh` 中的代码路径映射，例如 `-v /home/xtrainer_leisaac:/workspace/xtrainer_leisaac:rw`。
+2. 修改 `create_docker.sh` 中的代码路径映射，例如 `-v /home/xtrainer_leisaac:/workspace/xtrainer_leisaac:rw`。
 3. 创建容器：
 
 ```bash
