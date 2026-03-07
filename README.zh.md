@@ -37,7 +37,7 @@
 
 ### 使用 Anaconda 安装
 
-1. 确保已安装 **Isaac Sim** 与 **Isaac Lab**。建议参考 [LeIsaac 项目文档](https://lightwheelai.github.io/leisaac/docs/getting_started/installation)，按需配置。已验证 **Isaac Sim 4.5** 可正常工作。
+1. 确保已安装 **Isaac Sim** 与 **Isaac Lab**。建议参考 [LeIsaac 项目文档](https://lightwheelai.github.io/leisaac/docs/getting_started/installation)，按需配置。注意根据显卡型号选择对应的Isaac Sim版本。已验证 **Isaac Sim 4.5** 可正常工作。
 2. 在安装 Isaac Lab 后，执行：
 
 ```bash
