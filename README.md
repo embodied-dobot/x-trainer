@@ -45,7 +45,7 @@ To begin, download the necessary [USD assets](https://huggingface.co/dstx123/xtr
 
 ### **Install the environment using Anaconda**
 
-Please ensure **Isaac Sim** and **Isaac Lab** are installed. We recommend referring to the [LeIsaac project documentation](https://lightwheelai.github.io/leisaac/docs/getting_started/installation) for the installation process and selecting the appropriate configuration. **Isaac Sim 4.5** has been verified to work correctly.
+Please ensure **Isaac Sim** and **Isaac Lab** are installed. We recommend referring to the [LeIsaac project documentation](https://lightwheelai.github.io/leisaac/docs/getting_started/installation) for the installation process and selecting the appropriate configuration. Please select the appropriate version of Isaac Sim based on your graphics card model. **Isaac Sim 4.5** has been verified to work correctly.
 
 Install this project after installing Isaac Lab:
 ```bash
