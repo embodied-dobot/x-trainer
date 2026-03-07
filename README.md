@@ -57,12 +57,12 @@ pip install -e source/leisaac
 
 First, build the image using the Dockerfile:
 ```bash
-git clone https://github.com/dstx123/xtrainer_leisaac.git
+git clone https://github.com/embodied-dobot/x-trainer.git
 cd docker
 docker build --network=host -t xtrainer-leisaac:v1 .
 ```
 
-Once the build is complete, modify the code path in the `start_docker.sh` script to map your local code into the container. Example: `-v /home/xtrainer_leisaac:/workspace/xtrainer_leisaac:rw`.
+Once the build is complete, modify the code path in the `create_docker.sh` script to map your local code into the container. Example: `-v /home/xtrainer_leisaac:/workspace/xtrainer_leisaac:rw`.
 
 Create the container using the script:
 ```bash
