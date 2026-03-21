@@ -8,6 +8,8 @@
 
 你可以自由发挥，实现更强大的强化学习模型。
 
+测评端使用 lerobot 版本 0.4.2
+
 ## 比赛流程总览
 
 ```
@@ -86,7 +88,7 @@ Task 3: 试管取放
 conda create -n leisaac python==3.10
 ```
 
-创建完成后，进入创建好的Leisaac环境
+创建完成后，可以进入创建好的Leisaac环境尝试是否正常
 
 ```bash
 conda activate leisaac
@@ -135,20 +137,29 @@ cd ~/dobot/isaacsim
 
 Isaac Sim 首次打开时间较久，可能会出现“无响应”的提示，请耐心等待即可。
 
-接下来安装 Isaac Lab：
+#### 第四步：安装Isaac lab 并配置项目
 
 ```bash
 conda activate leisaac
 pip install isaaclab==2.1.0 --extra-index-url  https://pypi.nvidia.com
 ```
 
-- 注意：如果有报错安装失败，提示no module，可以改用下面这条指令安装
+- 注意：如果有报错安装失败，提示no module，可以使用下面这条指令尝试解决
 
 ```bash
 pip install flatdict==4.0.1 --no-build-isolation
 ```
 
 上一步安装完后，执行：
+
+拉取项目文件
+
+```bash
+cd ~/dobot
+git clone -b dobot-challenge https://github.com/embodied-dobot/x-trainer.git
+```
+
+随后
 
 ```bash
 cd ~/dobot/x-trainer
@@ -157,33 +168,9 @@ pip install -e source/leisaac
 
 至此，完成 Isaac Sim 和 Isaac Lab 的安装。
 
-### 2. 安装项目文件
+### 2. 下载资产并导入
 
-#### 第一步：激活 LeIsaac 环境
-
-```bash
-conda activate leisaac
-```
-
-#### 第二步：进入dobot文件夹
-
-```bash
-cd ~/dobot
-```
-
-#### 第三步：执行项目文件的克隆指令
-
-```bash
-git clone -b dobot-challenge https://github.com/embodied-dobot/x-trainer.git ~/dobot/x-trainer
-```
-切换到赛事分支
-
-```bash
-cd ~/dobot/x-trainer
-git checkout dobot-challenge
-```
-
-（项目文件 github 网址：[点此进入](https://github.com/embodied-dobot/x-trainer/tree/dobot-challenge)）
+请从赛事钉钉群下载资产并导入。
 
 *注意：资产文件较大故没有放置在github中，若按上述操作从github中拉取，请从赛事官方的钉钉群中下载assets文件,解压并替换现有的assets文件夹。*
 
@@ -432,7 +419,7 @@ python scripts/convert/isaaclab2lerobot_xtrainer.py
 
 我们在项目文件中提供了基于 LeRobot 框架的 ACT (Action Chunking with Transformers) 策略训练实现。
 
-**若尚未安装 LeRobot 环境**：建议单独创建 conda 环境以避免与 LeIsaac 依赖冲突。可参考 [LeRobot 官方文档](https://github.com/huggingface/lerobot) 安装；本项目当前在 LeRobot v0.3.3 下验证过（见 `scripts/convert/isaaclab2lerobot_xtrainer.py` 内注释）。安装后在该环境中执行下面的训练与推理服务端命令。
+**若尚未安装 LeRobot 环境**：建议单独创建 conda 环境以避免与 LeIsaac 依赖冲突。可参考 [LeRobot 官方文档](https://github.com/huggingface/lerobot) 安装；本项目当前在 LeRobot v0.4.2 下验证过。安装后在该环境中执行下面的训练与推理服务端命令。
 
 #### 第一步：打开一个终端，进入 lerobot 环境
 
@@ -473,52 +460,7 @@ source ~/dobot/isaacsim/setup_conda_env.sh
 - 数据增强
 - 模型集成
 
-### 4. 推理评估训练效果
-
-利用 ACT 训练好模型后，可在本项目中进行推理评估：
-
-#### 第一步：打开一个终端，在 LeRobot 环境启动服务端:
-
-```bash
-conda activate lerobot
-python -m lerobot.async_inference.policy_server \
-     --host=127.0.0.1 \
-     --port=5555 \
-     --fps=30 
-```
-
-#### 第二步：再打开一个终端，进入 leisaac 环境
-
-```bash
-cd ~/dobot/x-trainer/
-conda activate leisaac
-source ~/dobot/isaacsim/setup_conda_env.sh
-```
-
-#### 第三步：在 leisaac 环境运行推理程序:
-
-```bash
-python scripts/evaluation/policy_inference.py \
-    --task=task2 \
-    --eval_rounds=10 \
-    --policy_type=xtrainer_act \
-    --policy_host=localhost \
-    --policy_port=5555 \
-    --policy_timeout_ms=5000 \
-    --policy_action_horizon=16 \
-    --policy_language_instruction="Gather to the recycling area and cover with anti-static lids." \
-    --device=cuda \
-    --enable_cameras \
-    --policy_checkpoint_path="/home/dobot/dobot/x-trainer/ckpts/act_2/checkpoints/200000/pretrained_model" 
-```
-
-指令说明：
-
-- 修改 `--task` 为对应的任务号。
-- 修改 `--policy_language_instruction` 为任务的说明（策略语言指令）。
-- 修改 `--policy_checkpoint_path` 为前面训练文件的输出路径。
-
-### 5. 对推理进行任务评分
+### 4. 对推理进行任务评分
 
 可在本项目中利用评分脚本进行评估：
 
@@ -591,7 +533,7 @@ python scripts/evaluation/policy_scoring.py \
 [Score][Task1] 平均分 | 完成性 19.50, 成功率 58.00, 效率 17.20, 总分 94.70
 ```
 
-### 6. 提交与打包说明（Docker 镜像）
+### 5. 提交与打包说明（Docker 镜像）
 
 最终提交物为 **Docker 镜像**，**仅通过赛事官网指定提交通道上传**。测评时主办方在本地运行评分脚本 `policy_scoring.py`，通过端口连接到你镜像内运行的推理服务进行打分。请严格按以下**命名与路径规范**打包，便于测评自动化。
 
@@ -610,13 +552,13 @@ python scripts/evaluation/policy_scoring.py \
 - **模型路径**：为统一测评脚本参数，**镜像内模型必须且只能放在** `/workspace/checkpoints/pretrained_model`。测评时一律使用该路径作为 `--policy_checkpoint_path`，请勿使用其他路径。
 - 若你需上传说明文件（如使用说明、依赖说明），请命名为：`{四位数}_readme.txt`（如 `0001_readme.txt`），便于测评方对应队伍。
 
-#### 6.2 提交要求概述
+#### 5.2 提交要求概述
 
 - 镜像内需包含：**推理服务端**（与 LeRobot 异步推理接口兼容）、**模型权重与依赖**。
 - 容器启动后必须 **监听 5555 端口**（默认），且服务需在 **0.0.0.0** 上监听，以便宿主机能连接。
 - 测评时主办方会：从官网获取你的镜像 → 启动容器（映射 5555）→ 在宿主机运行 `policy_scoring.py`，使用 `--policy_host=localhost --policy_port=5555` 和 **固定路径** `--policy_checkpoint_path=/workspace/checkpoints/pretrained_model` 连接你的服务并评分。
 
-#### 6.3 接口兼容性
+#### 5.3 接口兼容性
 
 评分脚本通过 **gRPC** 与推理服务通信，协议与 LeRobot 的 `lerobot.async_inference.policy_server` 一致。你的镜像内可以：
 
@@ -625,7 +567,7 @@ python scripts/evaluation/policy_scoring.py \
 
 客户端（评分脚本）会向服务端发送 `PolicySetup`（包含 `policy_type`、`pretrained_name_or_path`、`actions_per_chunk`、观测/动作特征等）。**模型路径 `pretrained_name_or_path` 在服务端（容器内）解析**，因此镜像内模型必须放在你约定好的路径；测评时主办方会使用相同的路径作为 `--policy_checkpoint_path` 传入评分脚本。
 
-#### 6.4 镜像内约定：模型路径与启动方式
+#### 5.4 镜像内约定：模型路径与启动方式
 
 为便于测评，**必须**在镜像内使用**固定模型路径**（见 6.1）：
 
@@ -647,7 +589,7 @@ python -m lerobot.async_inference.policy_server \
 
 注意：`--host=0.0.0.0` 必须指定，否则宿主机无法连接。测评时使用的 `--policy_checkpoint_path` 固定为 `/workspace/checkpoints/pretrained_model`，服务端会在该路径加载模型。
 
-#### 6.5 打包示例（Dockerfile 与运行）
+#### 5.5 打包示例（Dockerfile 与运行）
 
 以下示例中 **镜像名与模型路径均按 6.1 规范**（队伍编号以 `0001` 为例）。请将 `0001` 替换为你队编号。
 
@@ -682,9 +624,8 @@ docker build -t dobot_0001_submission:v1 -f Dockerfile .
 docker run -it --rm -p 5555:5555 --gpus all dobot_0001_submission:v1
 ```
 
-请根据你是否使用 GPU 决定是否加 `--gpus all`；测评环境以主办方说明为准。
 
-#### 6.6 自测方法
+#### 5.6 自测方法
 
 在提交前，建议在本地完整走通“宿主机评分脚本 + 容器内推理服务”的流程（自测时镜像名、路径须与 6.1 规范一致）：
 
@@ -718,13 +659,12 @@ docker run -it --rm -p 5555:5555 --gpus all dobot_0001_submission:v1
 
 3. 若能在宿主机看到评分输出且无连接/超时错误，则说明镜像与接口兼容，可按 6.1 命名规范打包并在**官网提交通道**提交。若有报错，请检查：镜像名是否为 `dobot_{编号}_submission`、容器是否暴露 5555、服务是否监听 0.0.0.0、镜像内 `/workspace/checkpoints/pretrained_model` 下是否有完整权重文件。
 
-#### 6.7 提交方式
+#### 5.7 提交方式
 
 - **唯一通道**：镜像（或按官网要求的镜像提交方式）**仅通过赛事官网的提交通道上传**，具体操作、截止时间以官网说明为准。
 - 提交时请确保：
   - 镜像名严格为 **`dobot_{你的四位数编号}_submission`**；Tag 使用**版本号**以区分多次提交：第一次提交用 **`v1`**，第二次用 **`v2`**，依次递增（完整示例：`dobot_0001_submission:v1`）。
   - 镜像内模型已放在 **`/workspace/checkpoints/pretrained_model`**，无需再单独说明路径；
-  - 若官网要求附说明文件，建议命名为 **`{四位数}_readme.txt`**（或带版本如 **`{四位数}_v1_readme.txt`**），便于测评对应。
 
 ## 指令参数说明
 

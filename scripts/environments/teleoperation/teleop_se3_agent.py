@@ -46,6 +46,17 @@ python scripts/environments/teleoperation/teleop_se3_agent.py \
     
     --record \
     --dataset_file=./datasets/dataset.hdf5
+
+python scripts/environments/teleoperation/teleop_se3_agent.py \
+    --task=LeIsaac-XTrainer-PickCube-v0 \
+    --teleop_device=xtrainer_vr \
+    --num_envs=1 \
+    --device=cuda \
+    --enable_cameras \
+    --multi_view \
+    [--left_disabled] \
+    --record \
+    --dataset_file=./datasets/dataset.hdf5
     
 
 python scripts/environments/teleoperation/replay.py --task=LeIsaac-XTrainer-PickOrange-v0 --num_envs=1 --device=cuda --enable_cameras --replay_mode=action --dataset_file=./datasets/dataset2.hdf5 --select_episodes 0 --task_type bi_keyboard
@@ -54,7 +65,7 @@ python scripts/environments/teleoperation/replay.py --task=LeIsaac-XTrainer-Pick
 # add argparse arguments
 parser = argparse.ArgumentParser(description="leisaac teleoperation for leisaac environments.")
 parser.add_argument("--num_envs", type=int, default=1, help="Number of environments to simulate.")
-parser.add_argument("--teleop_device", type=str, default="keyboard", choices=['keyboard', 'so101leader', 'bi-so101leader', 'xtrainerleader', 'bi_keyboard'], help="Device for interacting with environment")
+parser.add_argument("--teleop_device", type=str, default="keyboard", choices=['keyboard', 'so101leader', 'bi-so101leader', 'xtrainerleader', 'bi_keyboard', 'xtrainer_vr'], help="Device for interacting with environment")
 parser.add_argument("--port", type=str, default='/dev/ttyACM0', help="Port for the teleop device:so101leader, default is /dev/ttyACM0")
 parser.add_argument("--left_arm_port", type=str, default='/dev/ttyACM0', help="Port for the left teleop device:bi-so101leader, default is /dev/ttyACM0")
 parser.add_argument("--right_arm_port", type=str, default='/dev/ttyACM1', help="Port for the right teleop device:bi-so101leader, default is /dev/ttyACM1")
@@ -105,7 +116,7 @@ from isaaclab.managers import TerminationTermCfg, DatasetExportMode
 
 import leisaac.tasks
 
-from leisaac.devices import Se3Keyboard, SO101Leader, BiSO101Leader, XTrainerLeader, BiKeyboard
+from leisaac.devices import Se3Keyboard, SO101Leader, BiSO101Leader, XTrainerLeader, BiKeyboard, XTrainerVR
 from leisaac.enhance.managers import StreamingRecorderManager, EnhanceDatasetExportMode
 from leisaac.utils.env_utils import dynamic_reset_gripper_effort_limit_sim
 
@@ -179,7 +190,7 @@ def main():  # noqa: C901
     if is_direct_env:
         assert args_cli.teleop_device in ["so101leader", "bi-so101leader"], "only support so101leader or bi-so101leader for direct task"
     if "XTrainer" in task_name:
-        assert args_cli.teleop_device in ["xtrainerleader", "bi_keyboard"], "only support xtrainerleader or bi_keyboard for xtrainer task"
+        assert args_cli.teleop_device in ["xtrainerleader", "bi_keyboard", "xtrainer_vr"], "only support xtrainerleader, bi_keyboard or xtrainer_vr for xtrainer task"
 
     # timeout and terminate preprocess
     if is_direct_env:
@@ -240,9 +251,11 @@ def main():  # noqa: C901
         teleop_interface = XTrainerLeader(env, args_cli.left_disabled)
     elif args_cli.teleop_device == "bi_keyboard":
         teleop_interface = BiKeyboard(env, sensitivity=0.25 * args_cli.sensitivity)
+    elif args_cli.teleop_device == "xtrainer_vr":
+        teleop_interface = XTrainerVR(env, args_cli.left_disabled)
     else:
         raise ValueError(
-            f"Invalid device interface '{args_cli.teleop_device}'. Supported: 'keyboard', 'so101leader', 'bi-so101leader', 'xtrainerleader', 'bi_keyboard'."
+            f"Invalid device interface '{args_cli.teleop_device}'. Supported: 'keyboard', 'so101leader', 'bi-so101leader', 'xtrainerleader', 'bi_keyboard', 'xtrainer_vr'."
         )
 
     # add teleoperation key for env reset
