@@ -219,7 +219,7 @@ python scripts/environments/teleoperation/teleop_se3_agent.py \
 
 #### 键盘控制键位说明
 
-布局按左右手分区：左手控制左臂，右手控制右臂；按住动作键移动，松开停止；按住 `Shift` + 键实现反向。
+如果你想自己采集数据：
 
 | 关节     | 左臂键位 | 右臂键位 | 说明                   |
 | -------- | -------- | -------- | ---------------------- |
@@ -424,9 +424,11 @@ conda activate lerobot
 
 #### 第四步：输入指令，开始转换
 
-```bash
-python scripts/convert/isaaclab2lerobot_xtrainer.py
-```
+- `B`：开始控制
+- `R`：记录任务失败并重置
+- `N`：记录任务成功并重置
+
+#### 采集流程
 
 ### 3. 训练
 
