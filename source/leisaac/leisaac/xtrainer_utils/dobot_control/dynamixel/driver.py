@@ -71,6 +71,7 @@ class FakeDynamixelDriver(DynamixelDriverProtocol):
         self._ids = ids
         self._joint_angles = np.zeros(len(ids), dtype=int)
         self._torque_enabled = False
+        self._joint_keys = np.zeros(3, dtype=np.int32)
 
     def set_joints(self, joint_angles: Sequence[float]):
         if len(joint_angles) != len(self._ids):
@@ -94,7 +95,7 @@ class FakeDynamixelDriver(DynamixelDriverProtocol):
         pass
 
     def get_keys(self) -> np.ndarray:
-        pass
+        return self._joint_keys.copy()
 
 
 class DynamixelDriver(DynamixelDriverProtocol):
@@ -113,8 +114,9 @@ class DynamixelDriver(DynamixelDriverProtocol):
         self._append_id = append_id
         self.using_sensor = using_sensor
         self._joint_angles = None
-        self._joint_keys = np.zeros(3)  # add 2 keys
-        self._lock = Lock()
+        self._joint_keys = np.zeros(3, dtype=np.int32)  # add 2 keys
+        self._state_lock = Lock()
+        self._io_lock = Lock()
 
         # Initialize the port handler, packet handler, and group sync read/write
         self._portHandler = PortHandler(port)
@@ -153,6 +155,17 @@ class DynamixelDriver(DynamixelDriverProtocol):
 
         self._stop_thread = Event()
         self._start_reading_thread()
+        self._wait_for_initial_state()
+
+    def _wait_for_initial_state(self, timeout_s: float = 2.0):
+        deadline = time.time() + timeout_s
+        while time.time() < deadline:
+            with self._state_lock:
+                if self._joint_angles is not None:
+                    return
+            time.sleep(0.01)
+        
+        print(f"[Warning] DynamixelDriver did not receive initial joint state within {timeout_s:.1f}s.")
 
     def _internal_getKey(self):
         txBuf = [0xAA, 0x55, 0xAA]
@@ -190,34 +203,35 @@ class DynamixelDriver(DynamixelDriverProtocol):
         if not self._torque_enabled:
             raise RuntimeError("Torque must be enabled to set joint angles")
 
-        for dxl_id, angle in zip(self._ids, joint_angles):
-            # Convert the angle to the appropriate value for the servo
-            position_value = int(angle * 2048 / np.pi)
+        with self._io_lock:
+            for dxl_id, angle in zip(self._ids, joint_angles):
+                # Convert the angle to the appropriate value for the servo
+                position_value = int(angle * 2048 / np.pi)
 
-            # Allocate goal position value into byte array
-            param_goal_position = [
-                DXL_LOBYTE(DXL_LOWORD(position_value)),
-                DXL_HIBYTE(DXL_LOWORD(position_value)),
-                DXL_LOBYTE(DXL_HIWORD(position_value)),
-                DXL_HIBYTE(DXL_HIWORD(position_value)),
-            ]
+                # Allocate goal position value into byte array
+                param_goal_position = [
+                    DXL_LOBYTE(DXL_LOWORD(position_value)),
+                    DXL_HIBYTE(DXL_LOWORD(position_value)),
+                    DXL_LOBYTE(DXL_HIWORD(position_value)),
+                    DXL_HIBYTE(DXL_HIWORD(position_value)),
+                ]
 
-            # Add goal position value to the Syncwrite parameter storage
-            dxl_addparam_result = self._groupSyncWrite.addParam(
-                dxl_id, param_goal_position
-            )
-            if not dxl_addparam_result:
-                raise RuntimeError(
-                    f"Failed to set joint angle for Dynamixel with ID {dxl_id}"
+                # Add goal position value to the Syncwrite parameter storage
+                dxl_addparam_result = self._groupSyncWrite.addParam(
+                    dxl_id, param_goal_position
                 )
+                if not dxl_addparam_result:
+                    raise RuntimeError(
+                        f"Failed to set joint angle for Dynamixel with ID {dxl_id}"
+                    )
 
-        # Syncwrite goal position
-        dxl_comm_result = self._groupSyncWrite.txPacket()
-        if dxl_comm_result != COMM_SUCCESS:
-            raise RuntimeError("Failed to syncwrite goal position")
+            # Syncwrite goal position
+            dxl_comm_result = self._groupSyncWrite.txPacket()
+            if dxl_comm_result != COMM_SUCCESS:
+                raise RuntimeError("Failed to syncwrite goal position")
 
-        # Clear syncwrite parameter storage
-        self._groupSyncWrite.clearParam()
+            # Clear syncwrite parameter storage
+            self._groupSyncWrite.clearParam()
 
     def torque_enabled(self) -> bool:
         return self._torque_enabled
@@ -225,7 +239,7 @@ class DynamixelDriver(DynamixelDriverProtocol):
     def set_torque_mode(self, enable: bool):
         torque_value = TORQUE_ENABLE if enable else TORQUE_DISABLE
         id_all = tuple(self._ids) + (self._append_id,)
-        with self._lock:
+        with self._io_lock:
             for dxl_id in id_all:
                 dxl_comm_result, dxl_error = self._packetHandler.write1ByteTxRx(
                     self._portHandler, dxl_id, ADDR_TORQUE_ENABLE, torque_value
@@ -248,9 +262,9 @@ class DynamixelDriver(DynamixelDriverProtocol):
         # Continuously read joint angles and update the joint_angles array
         while not self._stop_thread.is_set():
             time.sleep(0.001)
-            with self._lock:
-                _joint_angles = np.zeros(len(self._ids), dtype=int)
-                # print("aaaa: ", self._ids)
+            _joint_angles = np.zeros(len(self._ids), dtype=int)
+            keys = None
+            with self._io_lock:
                 dxl_comm_result = self._groupSyncRead.txRxPacket()
                 if dxl_comm_result != COMM_SUCCESS:
                     print(f"warning, comm failed: {dxl_comm_result}")
@@ -268,17 +282,17 @@ class DynamixelDriver(DynamixelDriverProtocol):
                         raise RuntimeError(
                             f"Failed to get joint angles for Dynamixel with ID {dxl_id}"
                         )
-                self._joint_angles = _joint_angles
                 keys = self._internal_getKey()
-                if keys is not None:
-                    self._joint_keys = keys
+            with self._state_lock:
+                self._joint_angles = _joint_angles
+                if keys is not None and len(keys):
+                    self._joint_keys = np.array(keys, dtype=np.int32)
             # self._groupSyncRead.clearParam() # TODO what does this do? should i add it
 
     def get_joints(self) -> np.ndarray:
-        # Return a copy of the joint_angles array to avoid race conditions
-        while self._joint_angles is None:
-            time.sleep(0.1)
-        with self._lock:
+        with self._state_lock:
+            if self._joint_angles is None:
+                return None
             _j = self._joint_angles.copy()
         # print(_j, self._ids)
         return _j / 2048.0 * np.pi
@@ -289,17 +303,14 @@ class DynamixelDriver(DynamixelDriverProtocol):
         self._portHandler.closePort()
 
     def get_keys(self) -> np.ndarray:
-        # Return a copy of the joint_angles array to avoid race conditions
-        while self._joint_keys is None:
-            time.sleep(0.01)
-        with self._lock:
+        with self._state_lock:
             key = self._joint_keys.copy()
         # log_write(__file__, "ButtonA: ["+str(key)+"] unlock")
         return key
 
     # set p
     def set_joint_arg_2Byte(self, _id, addr, val):
-        with self._lock:
+        with self._io_lock:
             dxl_comm_result, dxl_error = self._packetHandler.write2ByteTxRx(
                 self._portHandler, _id, addr, val
             )
