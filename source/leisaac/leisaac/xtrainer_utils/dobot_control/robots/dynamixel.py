@@ -77,6 +77,7 @@ class DynamixelRobot():
         self._torque_on = False
         self._last_pos = None
         self._alpha = 0.99
+        self._last_keys = np.zeros(3, dtype=np.int32)
 
         if start_joints is not None:
             # loop through all joints and add +- 2pi to the joint offsets to get the closest to start joints
@@ -101,7 +102,11 @@ class DynamixelRobot():
         return len(self._joint_ids)
 
     def get_joint_state(self) -> np.ndarray:
-        pos = (self._driver.get_joints() - self._joint_offsets) * self._joint_signs
+        joints = self._driver.get_joints()
+        if joints is None:
+            return None
+
+        pos = (joints - self._joint_offsets) * self._joint_signs
         assert len(pos) == self.num_dofs()
 
         if self.gripper_open_close is not None:
@@ -135,4 +140,8 @@ class DynamixelRobot():
         return {"joint_state": self.get_joint_state()}
 
     def get_key_status(self):
-        return self._driver.get_keys()
+        keys = self._driver.get_keys()
+        if keys is None:
+            return self._last_keys.copy()
+        self._last_keys = np.array(keys, dtype=np.int32)
+        return self._last_keys.copy()
