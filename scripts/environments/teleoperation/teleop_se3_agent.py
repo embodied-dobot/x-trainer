@@ -11,8 +11,6 @@ if multiprocessing.get_start_method() != "spawn":
     multiprocessing.set_start_method("spawn", force=True)
 import argparse
 
-from isaaclab.app import AppLauncher
-
 '''
 python scripts/environments/teleoperation/teleop_se3_agent.py \
     --task=LeIsaac-XTrainer-PickCube-v0 \
@@ -83,32 +81,42 @@ parser.add_argument("--num_demos", type=int, default=0, help="Number of demonstr
 parser.add_argument("--recalibrate", action="store_true", help="recalibrate SO101-Leader or Bi-SO101Leader")
 parser.add_argument("--quality", action="store_true", help="whether to enable quality render mode.")
 
-# append AppLauncher cli args
-AppLauncher.add_app_launcher_args(parser)
-# parse the arguments
-args_cli = parser.parse_args()
-
-app_launcher_args = vars(args_cli)
-
-# launch omniverse app
-app_launcher = AppLauncher(app_launcher_args)
-simulation_app = app_launcher.app
-
 import os
 import time
 import torch
-import gymnasium as gym
 
-from isaaclab.envs import ManagerBasedRLEnv, DirectRLEnv
-from isaaclab_tasks.utils import parse_env_cfg
-from isaaclab.managers import TerminationTermCfg, DatasetExportMode
+################################################################################
+############################### VR stereo vision ###############################
+import cv2
+import numpy as np
 
-import leisaac.tasks
+image_queue = multiprocessing.Queue(maxsize=2)
 
-from leisaac.devices import Se3Keyboard, SO101Leader, BiSO101Leader, XTrainerLeader, BiKeyboard, XTrainerVR
-from leisaac.enhance.managers import StreamingRecorderManager, EnhanceDatasetExportMode
-from leisaac.utils.env_utils import dynamic_reset_gripper_effort_limit_sim
+def run_flask_server(q, cert_path, key_path):
+    from flask import Flask, Response
+    from flask_cors import CORS
+    app = Flask(__name__)
+    CORS(app)
 
+    @app.route('/stereo_feed')
+    def stereo_feed():
+        def generate():
+            print("Web client connected to stream.")
+            while True:
+                try:
+                    frame_bytes = q.get(timeout=1.0)
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                except Exception as e:
+                    continue
+        return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+    
+    app.run(host='0.0.0.0', port=8444, threaded=True, use_reloader=False, ssl_context=(cert_path, key_path))
+################################################################################
 
 class RateLimiter:
     """Convenience class for enforcing rates in loops."""
@@ -137,21 +145,41 @@ class RateLimiter:
             while self.last_time < time.time():
                 self.last_time += self.sleep_duration
 
-
-def manual_terminate(env: ManagerBasedRLEnv | DirectRLEnv, success: bool):
-    if hasattr(env, "termination_manager"):
-        if success:
-            env.termination_manager.set_term_cfg("success", TerminationTermCfg(func=lambda env: torch.ones(env.num_envs, dtype=torch.bool, device=env.device)))
-        else:
-            env.termination_manager.set_term_cfg("success", TerminationTermCfg(func=lambda env: torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)))
-        env.termination_manager.compute()
-    elif hasattr(env, "_get_dones"):
-        env.cfg.return_success_status = success
-
-
 def main():  # noqa: C901
-    """Running lerobot teleoperation with leisaac manipulation environment."""
+    from isaaclab.app import AppLauncher
+    # append AppLauncher cli args
+    AppLauncher.add_app_launcher_args(parser)
+    # parse the arguments
+    args_cli = parser.parse_args()
+    app_launcher_args = vars(args_cli)
 
+    # launch omniverse app
+    app_launcher = AppLauncher(app_launcher_args)
+    simulation_app = app_launcher.app
+    
+    import gymnasium as gym
+    from isaaclab.envs import ManagerBasedRLEnv, DirectRLEnv
+    from isaaclab_tasks.utils import parse_env_cfg
+    from isaaclab.managers import TerminationTermCfg, DatasetExportMode
+    
+    import leisaac.tasks  # Can not be removed. See source/leisaac/leisaac/__init__.py for details.   
+
+    from leisaac.devices import Se3Keyboard, SO101Leader, BiSO101Leader, XTrainerLeader, BiKeyboard, XTrainerVR
+    from leisaac.enhance.managers import StreamingRecorderManager, EnhanceDatasetExportMode
+    from leisaac.utils.env_utils import dynamic_reset_gripper_effort_limit_sim
+
+    def manual_terminate(env: ManagerBasedRLEnv | DirectRLEnv, success: bool):
+        if hasattr(env, "termination_manager"):
+            if success:
+                env.termination_manager.set_term_cfg("success", TerminationTermCfg(func=lambda env: torch.ones(env.num_envs, dtype=torch.bool, device=env.device)))
+            else:
+                env.termination_manager.set_term_cfg("success", TerminationTermCfg(func=lambda env: torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)))
+            env.termination_manager.compute()
+        elif hasattr(env, "_get_dones"):
+            env.cfg.return_success_status = success
+
+    """Running lerobot teleoperation with leisaac manipulation environment."""
+    
     # get directory path and file name (without extension) from cli arguments
     output_dir = os.path.dirname(args_cli.dataset_file)
     output_file_name = os.path.splitext(os.path.basename(args_cli.dataset_file))[0]
@@ -264,11 +292,31 @@ def main():  # noqa: C901
 
     rate_limiter = RateLimiter(args_cli.step_hz)
 
+    if args_cli.teleop_device == "xtrainer_vr":
+        package_root = os.path.dirname(leisaac.__file__)
+        XLEVR_PATH = os.path.join(package_root, "xtrainer_utils", "XLeVR")
+        cert_path = os.path.join(XLEVR_PATH, 'cert.pem')
+        key_path = os.path.join(XLEVR_PATH, 'key.pem')
+        if not os.path.exists(cert_path):
+            print(f"❌ Error: Certificate file not found {cert_path}")
+        
+        flask_process = multiprocessing.Process(
+            target=run_flask_server, 
+            args=(image_queue, cert_path, key_path), 
+            daemon=True
+        )
+        flask_process.start()
+        print(">>> Stereo Visual Streamer started as a SEPARATE PROCESS at http://[IP]:8444/stereo_feed")
+
     # reset environment
     if hasattr(env, "initialize"):
         env.initialize()
     env.reset()
     teleop_interface.reset()
+
+    if args_cli.teleop_device == "xtrainer_vr":
+        stereo_left_sensor = env.unwrapped.scene["stereo_left"]
+        stereo_right_sensor = env.unwrapped.scene["stereo_right"]
 
     if args_cli.multi_view:
         try:
@@ -362,6 +410,9 @@ def main():  # noqa: C901
                     print(f"All {args_cli.num_demos} demonstrations recorded. Exiting the app.")
                     break
 
+                if args_cli.teleop_device == "xtrainer_vr":
+                    env.sim.render()
+
             elif actions is None:
                 env.render()
             # apply actions
@@ -371,13 +422,39 @@ def main():  # noqa: C901
                         print("Start Recording!!!")
                     start_record_state = True
                 env.step(actions)
+
+            
+            if args_cli.teleop_device == "xtrainer_vr":
+                try:
+                    img_l_raw = stereo_left_sensor.data.output["rgb"][0]
+                    img_r_raw = stereo_right_sensor.data.output["rgb"][0]
+                    sbs_tensor = torch.cat([img_l_raw, img_r_raw], dim=1)
+                    
+                    sbs_img = sbs_tensor.cpu().numpy().astype(np.uint8)
+                    sbs_img_bgr = cv2.cvtColor(sbs_img, cv2.COLOR_RGB2BGR)
+                    
+                    ret, buffer = cv2.imencode('.jpg', sbs_img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                    
+                    if ret:
+                        frame_bytes = buffer.tobytes()
+                        if not image_queue.full():
+                            image_queue.put_nowait(frame_bytes)
+                        else:
+                            try:
+                                image_queue.get_nowait()
+                                image_queue.put_nowait(frame_bytes)
+                            except:
+                                pass
+                except Exception as e:
+                    print(f"Vision error: {e}")
+
+
             if rate_limiter:
                 rate_limiter.sleep(env)
 
     # close the simulator
     env.close()
     simulation_app.close()
-
 
 if __name__ == "__main__":
     # run the main function

@@ -30,7 +30,9 @@ dependencies = [
     "scipy", 
     "websockets", 
     "pyyaml", 
-    "pynput"
+    "pynput",
+    "flask",
+    "flask-cors",
 ]
 
 [project.urls]

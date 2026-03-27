@@ -1,5 +1,22 @@
-// Wait for A-Frame scene to load
+//************************ Stereo vision ****************************** */
+AFRAME.registerComponent('stereo-layer', {
+  schema: { eye: { type: 'string', default: 'left' } },
+  init: function() {
+    this.el.addEventListener('object3dset', () => this.updateLayer());
+    this.updateLayer();
+  },
+  updateLayer: function() {
+    const mesh = this.el.getObject3D('mesh');
+    if (!mesh) return;
+    mesh.layers.disableAll();
+    if (this.data.eye === 'left') mesh.layers.set(1);      // Layer 1 = left eye
+    else if (this.data.eye === 'right') mesh.layers.set(2); // Layer 2 = right eye
+    else mesh.layers.set(0);
+  }
+});
+//******************************************************************* */
 
+// Wait for A-Frame scene to load
 AFRAME.registerComponent('controller-updater', {
   init: function () {
     console.log("Controller updater component initialized.");
@@ -390,6 +407,17 @@ AFRAME.registerComponent('controller-updater', {
   },
 
   tick: function () {
+    const streamEl = document.getElementById('stereoVideo');
+    if (streamEl && streamEl.src) {
+        const screens = document.querySelectorAll('a-cylinder');
+        screens.forEach(screen => {
+            const mesh = screen.getObject3D('mesh');
+            if (mesh && mesh.material && mesh.material.map) {
+                mesh.material.map.needsUpdate = true;
+            }
+        });
+    }
+
     // Update controller text if controllers are visible
     if (!this.leftHand || !this.rightHand) return; // Added safety check
 
@@ -671,7 +699,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 function addControllerTrackingButton() {
     if (navigator.xr) {
-        navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+        navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
             if (supported) {
                 // Create Start Controller Tracking button
                 const startButton = document.createElement('button');
@@ -708,7 +736,7 @@ function addControllerTrackingButton() {
                     const sceneEl = document.querySelector('a-scene');
                     if (sceneEl) {
                         // Use A-Frame's enterVR to handle session start
-                        sceneEl.enterVR(true).catch((err) => {
+                        sceneEl.enterVR().catch((err) => {
                             console.error('A-Frame failed to enter VR/AR:', err);
                             alert(`Failed to start AR session via A-Frame: ${err.message}`);
                         });
@@ -726,6 +754,11 @@ function addControllerTrackingButton() {
                     sceneEl.addEventListener('enter-vr', () => {
                         console.log('Entered VR - hiding start button');
                         startButton.style.display = 'none';
+
+                        const videoEl = document.getElementById('stereoVideo');
+                        if (videoEl) {
+                            videoEl.play().catch(e => console.log("Video play pending interaction"));
+                        }
                     });
 
                     sceneEl.addEventListener('exit-vr', () => {

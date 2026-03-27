@@ -9,6 +9,21 @@
     <script src="vr_app.js" defer></script>
     <script src="interface.js" defer></script>
     <link rel="stylesheet" href="styles.css">
+    <style>
+      body { background-color: #000; margin: 0; overflow: hidden; }
+      .a-canvas { background-color: #000 !important; }
+      
+      /* #stereoVideo {
+          position: fixed;
+          top: 10px;
+          left: 10px;
+          width: 320px; 
+          height: 180px;
+          z-index: 9999;
+          border: 2px solid red;
+          background: black;
+      } */
+    </style>
   </head>
   <body>
     <!-- Settings Button -->
@@ -252,16 +267,52 @@
     </div>
 
     <!-- A-Frame VR Scene -->
-    <a-scene vr-mode-ui="enabled: true;">
-      <!-- Passthrough setup -->
+
+    <!-- <a-scene vr-mode-ui="enabled: true;">
       <a-entity webxr-passthrough="referenceSpaceType: local-floor"></a-entity>
 
-      <!-- Headset tracking entity -->
       <a-entity id="headset" camera>
         <a-text id="headsetInfo" value="Headset: ..." position="0 0.2 -0.5" rotation="0 0 0" scale="0.05 0.05 0.05" color="yellow" align="center"></a-text>
       </a-entity>
 
-      <!-- Controllers -->
+      <a-entity id="leftHand" oculus-touch-controls="hand: left">
+        <a-text id="leftHandInfo" value="Pos: ...\nRot: ..." position="0 0.04 -0.05" rotation="0 0 0" scale="0.05 0.05 0.05" color="white" align="center"></a-text>
+      </a-entity>
+      <a-entity id="rightHand" oculus-touch-controls="hand: right">
+        <a-text id="rightHandInfo" value="Pos: ...\nRot: ..." position="0 0.04 -0.05" rotation="0 0 0" scale="0.05 0.05 0.05" color="white" align="center"></a-text>
+      </a-entity>
+    </a-scene> -->
+    <img id="stereoVideo" crossorigin="anonymous">
+
+    <a-scene webxr="requiredFeatures: local-floor;" vr-mode-ui="enabled: false" loading-screen="enabled: false">
+      <a-sky color="#000000"></a-sky>
+      
+      <a-entity id="headset" camera look-controls position="0 1.6 0"></a-entity>
+      <a-cylinder src="#stereoVideo"
+                  stereo-layer="eye: left"
+                  radius="3"
+                  height="2.95" 
+                  theta-start="130" 
+                  theta-length="100"
+                  side="back"
+                  scale="-1 1 1" 
+                  open-ended="true"
+                  position="0 1.6 0"
+                  material="shader: flat; repeat: 0.5 1; offset: 0 0">
+      </a-cylinder>
+      <a-cylinder src="#stereoVideo"
+                  stereo-layer="eye: right"
+                  radius="3"
+                  height="2.95" 
+                  theta-start="130" 
+                  theta-length="100"
+                  side="back"
+                  scale="-1 1 1"
+                  open-ended="true"
+                  position="0 1.6 0"
+                  material="shader: flat; repeat: 0.5 1; offset: 0.5 0">
+      </a-cylinder>
+
       <a-entity id="leftHand" oculus-touch-controls="hand: left">
         <a-text id="leftHandInfo" value="Pos: ...\nRot: ..." position="0 0.04 -0.05" rotation="0 0 0" scale="0.05 0.05 0.05" color="white" align="center"></a-text>
       </a-entity>
@@ -273,6 +324,12 @@
     <script>
       // Update VR server URL dynamically
       document.addEventListener('DOMContentLoaded', function() {
+        const currentHostname = window.location.hostname;
+        const imgElement = document.getElementById('stereoVideo');
+        if (imgElement) {
+            imgElement.src = `https://${currentHostname}:8444/stereo_feed`;
+        }
+
         const vrUrlElement = document.getElementById('vrServerUrl');
         if (vrUrlElement) {
           const currentUrl = window.location.origin;

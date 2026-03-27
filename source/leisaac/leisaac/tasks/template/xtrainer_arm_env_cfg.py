@@ -98,6 +98,43 @@ class XTrainerArmTaskSceneCfg(InteractiveSceneCfg):
         update_period=1/30.0, # 30FPS
     )
 
+    stereo_left: TiledCameraCfg = TiledCameraCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/x_trainer_asm_0226_SLDASM/base_link/stereo_left",
+        offset=TiledCameraCfg.OffsetCfg(
+            # Offset 0.034m to the left from the top camera position (total interpupillary distance 64mm)
+            pos=(0.496, -0.65, 0.55),
+            rot=euler_to_quat(-117.0, 0.0, 0.0),
+            convention="ros"
+        ),
+        data_types=["rgb"],
+        spawn=sim_utils.PinholeCameraCfg(
+            focal_length=15.1, 
+            horizontal_aperture=36.0,
+            clipping_range=(0.01, 50.0),
+        ),
+        width=1280,
+        height=720,
+        update_period=1/30.0,
+    )
+
+    stereo_right: TiledCameraCfg = TiledCameraCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/x_trainer_asm_0226_SLDASM/base_link/stereo_right",
+        offset=TiledCameraCfg.OffsetCfg(
+            pos=(0.564, -0.65, 0.55),
+            rot=euler_to_quat(-117.0, 0.0, 0.0),
+            convention="ros"
+        ),
+        data_types=["rgb"],
+        spawn=sim_utils.PinholeCameraCfg(
+            focal_length=15.1, 
+            horizontal_aperture=36.0,
+            clipping_range=(0.01, 50.0),
+        ),
+        width=1280,
+        height=720,
+        update_period=1/30.0,
+    )
+
     light = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/Light",
         spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),

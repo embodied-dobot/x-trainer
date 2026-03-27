@@ -30,6 +30,7 @@ For a deeper technical overview (architecture, modules, algorithms), see `docs/T
     * Real-time mapping to the simulation environment (16-dims) for "Digital Twin" control.
 * **VR Teleoperation (`XTrainerVR`)**:
     * Lightweight WebXR UI (`XLeVR`) running inside Quest / PICO headsets. Press `B` to auto-calibrate, stream 6DoF pose + trigger values, and map them to the 16-DoF follower in simulation.
+    * VR headsets support the presentation of simulated scenes in stereoscopic vision.
 * **High-Quality Data Collection**:
     * Strict **30Hz** frame synchronization using `Decimation=2` and `Step_Hz=30`.
     * HDF5 recording containing aligned images and joint states.
@@ -121,7 +122,7 @@ The keyboard layout is designed ergonomically: the **Left Hand** controls the Le
 | **J6** | `D` | `L` | Hold to move, Release to stop |
 | **Gripper** | **`G`** | **`H`** | **Hold to Close, Release to Open** |
 
-* **Reverse Movement**: Hold `Shift` + Key.
+* **Reverse Movement**: Hold `Z` + Key.
 * **System Controls**:
     * `B`: Start Control
     * `R`: Reset Environment (Fail)
@@ -160,17 +161,13 @@ python scripts/environments/teleoperation/teleop_se3_agent.py \
     --multi_view
 ```
 
-### 3. VR Teleoperation (`XTrainerVR`)
+### 3. VR Teleoperation (XTrainerVR)
 
-The WebXR service in `source/leisaac/leisaac/xtrainer_utils/XLeVR/` allows you to drive the dual-arm simulation directly from Quest 3 / PICO 4 headsets.
+Use a VR headset (Pico or Quest 3) to control the robot via a web interface.
 
-1. **Install the dependencies (first-time only)**
+#### Step 1: Network Setup & Launch
 
-```bash
-pip install -r source/leisaac/leisaac/xtrainer_utils/XLeVR/requirements.txt
-```
-
-2. **Launch the teleoperation script**
+Ensure that your **VR headset** and the **host computer** are connected to the **same local network (LAN)**. Run the following command:
 
 ```bash
 python scripts/environments/teleoperation/teleop_se3_agent.py \
@@ -182,23 +179,21 @@ python scripts/environments/teleoperation/teleop_se3_agent.py \
     --multi_view
 ```
 
-Add `--left_disabled` when you only want the right controller mapped.
+#### Step 2: Connect via VR Headset
 
-3. **Connect from the headset browser**
+After the script starts, the terminal will display a streaming URL containing your computer's local IP and port (e.g., https://210.45.70.170:8443).
 
-    * Keep the headset and workstation on the same LAN.
-    * Once the script starts it prints the HTTPS endpoint, e.g. `https://192.168.1.23:8443`.
-    * On Quest Browser / PICO Browser accept the self-signed certificate the first time, then the `XLeVR` dashboard will show up.
+Put on your VR headset and open the built-in Web Browser. Then open this URL.
 
-4. **Controller logic**
+Note: Since the connection uses a self-signed certificate, you may see a security warning. Please accept the risk or disable secure access mode in the browser settings to proceed.
 
-    * `Right B`: start streaming control and capture the current pose as the zero reference.
-    * `Left X`: task failed → reset (fires the `R` callback).
-    * `Left Y`: task success → reset (fires the `N` callback).
-    * Trigger value controls the gripper opening (release = open).
-    * 6DoF pose of each controller is mapped directly to the follower wrists once the session starts.
+Once the video stream loads, use the VR controllers to operate the robot:
 
-Customize ports or certificates by editing `config.yaml`, `cert.pem`, and `key.pem` in the same directory if needed.
+| Hand	| Button | Function | 
+| :---  | :---:  | :---: |
+| Right	| B	     | Start / Toggle Control |
+| Left	| X	     | Fail & Reset (Mark episode as failure)    |
+| Left	| Y	     | Success & Reset (Mark episode as success) |
 
 ### 4. Data Conversion
 
