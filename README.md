@@ -42,7 +42,7 @@ Task 1: 料品分拣
 Task 2: 工位清洁
 
 - 任务：清扫 3 个物体到指定区域，并盖上盖子收集。
-- 满分：100 分（收集完整性 40 分+ 倾倒准确性 40 分+ 效率 20 分）
+- 满分：100 分（收集完整性 40 分+ 覆盖准确性 40 分+ 效率 20 分）
 
 <img src="img/tube_inserting-06de04e1.gif" alt="img/tube_inserting-06de04e1.gif" style="zoom:50%;" />
 
